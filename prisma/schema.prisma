@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Conversation {
+  id             String         @id
+  role           Role
+  content        String
+  timestamp      DateTime       @default(now())
+  projectId      String
+  WebsiteProject WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id        String   @id
+  isPaid    Boolean  @default(false)
+  planId    String
+  amount    Float
+  credits   Int
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Version {
+  id             String         @id
+  code           String
+  description    String?
+  timestamp      DateTime       @default(now())
+  projectId      String
+  WebsiteProject WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WebsiteProject {
+  id                    String         @id
+  name                  String
+  initial_prompt        String
+  current_code          String?
+  current_version_index String         @default("")
+  userId                String
+  isPublished           Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime
+  Conversation          Conversation[]
+  Version               Version[]
+  user                  user           @relation(fields: [userId], references: [id])
+}
+
+model account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model user {
+  id             String           @id
+  email          String
+  name           String
+  totalCreation  Int              @default(0)
+  credits        Int              @default(20)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  emailVerified  Boolean          @default(false)
+  Transaction    Transaction[]
+  WebsiteProject WebsiteProject[]
+  account        account[]
+  session        session[]
+}
+
+model verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([identifier])
+}
+
+enum Role {
+  user
+  assistant
+}

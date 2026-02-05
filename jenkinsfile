@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+
+    environment {
+        // 1. Secrets from Jenkins Credentials
+        DB_URL_CRED = credentials('NEON_DB_URL')
+        AUTH_SECRET_CRED = credentials('BETTER_AUTH_SECRET')
+        AI_KEY_CRED = credentials('AI_API_KEY')
+        
+        // 2. Fixed Variables
+        PORT = "8000"
+        NODE_ENV = "production"
+        IMAGE_NAME = "simplylearn-image"
+        EMAIL = "himanshukumar86936@gmail.com"
+
+        //  Frontend Url
+        TRUSTED_ORIGIN = "http://localhost:5173"
+    }
+
+    stages {
+        stage('Clone Repo'){
+            steps{
+                git branch: 'main', url: 'https://github.com/Himanshu-Sen-co/SimplyLearn.git'
+            }
+        }
+
+        stage('Set Server IP & Deploy'){
+            steps{
+                // script {
+                //     // Backend ke liye EC2 ki Public IP nikalna
+                //     def publicIP = sh(script: "curl -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
+                //     env.BETTER_AUTH_URL = "http://${publicIP}:${PORT}"
+                // }
+
+                script {
+                            // Ye pehle Token mangega (IMDSv2) aur phir IP (IMDSv1 aur v2 dono ke liye safe hai)
+                            def token = sh(script: "curl -X PUT 'http://169.254.169.254/latest/api/token' -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' -s", returnStdout: true).trim()
+                            def publicIP = sh(script: "curl -H 'X-aws-ec2-metadata-token: ${token}' -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
+                            
+                            if(!publicIP) {
+                                // Agar token fail ho toh purana tareeka try karein
+                                publicIP = sh(script: "curl -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
+                            }
+                            
+                            env.BETTER_AUTH_URL = "http://${publicIP}:${PORT}"
+                            echo "Current Public IP is: ${publicIP}"
+                        }
+                
+                sh '''
+                    # Exporting all variables for Docker Compose
+                    export DATABASE_URL=${DB_URL_CRED}
+                    export BETTER_AUTH_SECRET=${AUTH_SECRET_CRED}
+                    export AI_API_KEY=${AI_KEY_CRED}
+                    export BETTER_AUTH_URL=${BETTER_AUTH_URL}
+                    export TRUSTED_ORIGIN=${TRUSTED_ORIGIN}
+                    export PORT=${PORT}
+                    export NODE_ENV=${NODE_ENV}
+
+                    docker-compose down || true
+                    docker-compose up --build -d
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            // Mail Notification Stage
+            mail to: "${EMAIL}",
+                 subject: "SimplyLearn Backend Deployed Successfully",
+                 body: """
+                 Hi Himanshu,
+                 
+                 Aapka backend EC2 par deploy ho gaya hai.
+                 Backend URL: ${env.BETTER_AUTH_URL}
+                 Frontend Origin Allowed: ${TRUSTED_ORIGIN}
+                 
+                 Cheers!
+                 """
+        }
+        failure {
+            mail to: "${EMAIL}",
+                 subject: "Deployment Failed: SimplyLearn",
+                 body: "Check Jenkins logs for more details on what went wrong."
+        }
+    }
+}
