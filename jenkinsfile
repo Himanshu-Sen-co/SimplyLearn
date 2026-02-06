@@ -56,8 +56,8 @@ pipeline {
                     export PORT=${PORT}
                     export NODE_ENV=${NODE_ENV}
 
-                    docker-compose down || true
-                    docker-compose up --build -d
+                    docker compose down || true
+                    docker compose up --build -d
                 '''
             }
         }
