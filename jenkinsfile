@@ -6,6 +6,8 @@ pipeline {
         DB_URL_CRED = credentials('NEON_DB_URL')
         AUTH_SECRET_CRED = credentials('BETTER_AUTH_SECRET')
         AI_KEY_CRED = credentials('AI_API_KEY')
+        STRIPE_SECRET_KEY = credentials('STRIPE_SECRET_KEY')
+        STRIPE_WEBHOOK_SECRET_KEY = credentials('STRIPE_WEBHOOK_SECRET_KEY')
         
         // 2. Fixed Variables
         PORT = "8000"
@@ -55,6 +57,8 @@ pipeline {
                     export TRUSTED_ORIGIN=${TRUSTED_ORIGIN}
                     export PORT=${PORT}
                     export NODE_ENV=${NODE_ENV}
+                    export STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+                    export STRIPE_WEBHOOK_SECRET_KEY=${STRIPE_WEBHOOK_SECRET_KEY}
 
                     docker-compose down || true
                     docker-compose up --build -d

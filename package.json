@@ -14,7 +14,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "openai": "^6.17.0",
-    "pg": "^8.18.0"
+    "pg": "^8.18.0",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

@@ -7,56 +7,107 @@ datasource db {
   provider = "postgresql"
 }
 
+
+model User {
+  id            String @id
+  email         String
+  name          String
+  totalCreation Int    @default(0)
+  credits       Int    @default(20)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified Boolean   @default(false)
+  
+  // Relations
+  projects WebsiteProject[]
+  sessions      Session[]
+  accounts      Account[]
+  transactions Transaction[]
+
+  @@map("user")
+}
+
+model WebsiteProject {
+  id                    String  @id @default(uuid())
+  name                  String
+  initial_prompt        String
+  current_code          String?
+  current_version_index String  @default("")
+  userId                String
+  isPublished           Boolean @default(false)
+
+  // Relations
+  conversation Conversation[]
+  versions     Version[]
+  user         User           @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  user
+  assistant
+}
+
 model Conversation {
-  id             String         @id
-  role           Role
-  content        String
-  timestamp      DateTime       @default(now())
-  projectId      String
-  WebsiteProject WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  role      Role
+  content   String
+  timestamp DateTime @default(now())
+  projectId String
+
+  // Relations
+  project WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Version {
+  id          String   @id @default(uuid())
+  code        String
+  description String?
+  timestamp   DateTime @default(now())
+  projectId   String
+
+  // Relations
+  project WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
-  id        String   @id
+  id        String   @id @default(uuid())
   isPaid    Boolean  @default(false)
   planId    String
   amount    Float
   credits   Int
   userId    String
   createdAt DateTime @default(now())
-  updatedAt DateTime
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Version {
-  id             String         @id
-  code           String
-  description    String?
-  timestamp      DateTime       @default(now())
-  projectId      String
-  WebsiteProject WebsiteProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
 }
 
-model WebsiteProject {
-  id                    String         @id
-  name                  String
-  initial_prompt        String
-  current_code          String?
-  current_version_index String         @default("")
-  userId                String
-  isPublished           Boolean        @default(false)
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime
-  Conversation          Conversation[]
-  Version               Version[]
-  user                  user           @relation(fields: [userId], references: [id])
-}
-
-model account {
+model Account {
   id                    String    @id
   accountId             String
   providerId            String
   userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -65,53 +116,20 @@ model account {
   scope                 String?
   password              String?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime
-  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt             DateTime  @updatedAt
 
   @@index([userId])
+  @@map("account")
 }
 
-model session {
-  id        String   @id
-  expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model user {
-  id             String           @id
-  email          String
-  name           String
-  totalCreation  Int              @default(0)
-  credits        Int              @default(20)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  emailVerified  Boolean          @default(false)
-  Transaction    Transaction[]
-  WebsiteProject WebsiteProject[]
-  account        account[]
-  session        session[]
-}
-
-model verification {
+model Verification {
   id         String   @id
   identifier String
   value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
 
   @@index([identifier])
-}
-
-enum Role {
-  user
-  assistant
+  @@map("verification")
 }
