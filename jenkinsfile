@@ -8,6 +8,7 @@ pipeline {
         AI_KEY_CRED = credentials('AI_API_KEY')
         STRIPE_SECRET_KEY = credentials('STRIPE_SECRET_KEY')
         STRIPE_WEBHOOK_SECRET_KEY = credentials('STRIPE_WEBHOOK_SECRET_KEY')
+        DUCKDNS_TOKEN = credentials('DUCKDNS_TOKEN')
         
         // 2. Fixed Variables
         PORT = "8000"
@@ -16,7 +17,9 @@ pipeline {
         EMAIL = "himanshukumar86936@gmail.com"
 
         //  Frontend Url
-        TRUSTED_ORIGIN = "http://localhost:5173"
+        TRUSTED_ORIGIN = "https://simplylearnio.vercel.app"
+        BETTER_AUTH_URL = "https://simplylearn.duckdns.org"
+        DOMAIN = "simplylearn.duckdns.org"
     }
 
     stages {
@@ -34,19 +37,19 @@ pipeline {
                 //     env.BETTER_AUTH_URL = "http://${publicIP}:${PORT}"
                 // }
 
-                script {
-                            // Ye pehle Token mangega (IMDSv2) aur phir IP (IMDSv1 aur v2 dono ke liye safe hai)
-                            def token = sh(script: "curl -X PUT 'http://169.254.169.254/latest/api/token' -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' -s", returnStdout: true).trim()
-                            def publicIP = sh(script: "curl -H 'X-aws-ec2-metadata-token: ${token}' -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
+                // script {
+                //             // Ye pehle Token mangega (IMDSv2) aur phir IP (IMDSv1 aur v2 dono ke liye safe hai)
+                //             def token = sh(script: "curl -X PUT 'http://169.254.169.254/latest/api/token' -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' -s", returnStdout: true).trim()
+                //             def publicIP = sh(script: "curl -H 'X-aws-ec2-metadata-token: ${token}' -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
                             
-                            if(!publicIP) {
-                                // Agar token fail ho toh purana tareeka try karein
-                                publicIP = sh(script: "curl -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
-                            }
+                //             if(!publicIP) {
+                //                 // Agar token fail ho toh purana tareeka try karein
+                //                 publicIP = sh(script: "curl -s http://169.254.169.254/latest/meta-data/public-ipv4", returnStdout: true).trim()
+                //             }
                             
-                            env.BETTER_AUTH_URL = "http://${publicIP}:${PORT}"
-                            echo "Current Public IP is: ${publicIP}"
-                        }
+                //             env.BETTER_AUTH_URL = "http://${publicIP}:${PORT}"
+                //             echo "Current Public IP is: ${publicIP}"
+                //         }
                 
                 sh '''
                     # Exporting all variables for Docker Compose
@@ -59,6 +62,7 @@ pipeline {
                     export NODE_ENV=${NODE_ENV}
                     export STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
                     export STRIPE_WEBHOOK_SECRET_KEY=${STRIPE_WEBHOOK_SECRET_KEY}
+                    export DUCKDNS_TOKEN=${DUCKDNS_TOKEN}
 
                     docker-compose down || true
                     docker-compose up --build -d

@@ -1,18 +1,30 @@
+
+
 # services:
 #   app:
 #     build: .
+#     container_name: SimplyLearn-server
 #     ports:
-#       - "8000:8000"
-#     env_file:
-#       - .env  # Isse aapka Neon DATABASE_URL automatic load ho jayega
+#       - "${PORT}:${PORT}" 
+#     environment:
+#       - PORT=${PORT}
+#       - NODE_ENV=${NODE_ENV}
+#       - DATABASE_URL=${DATABASE_URL}
+#       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+#       - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+#       - TRUSTED_ORIGIN=${TRUSTED_ORIGIN}
+#       - AI_API_KEY=${AI_API_KEY}
+#       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+#       - STRIPE_WEBHOOK_SECRET_KEY=${STRIPE_WEBHOOK_SECRET_KEY}
 #     restart: always
 
 services:
   app:
     build: .
     container_name: SimplyLearn-server
-    ports:
-      - "${PORT}:${PORT}" 
+    # Port 8000 ko expose karne ki zaroorat nahi kyunki Caddy internally connect karega
+    expose:
+      - "${PORT}"
     environment:
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
@@ -23,4 +35,41 @@ services:
       - AI_API_KEY=${AI_API_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET_KEY=${STRIPE_WEBHOOK_SECRET_KEY}
+      - DUCKDNS_TOKEN=${DUCKDNS_TOKEN}
     restart: always
+    networks:
+      - simply-network
+
+  duckdns:
+    image: linuxserver/duckdns:latest
+    container_name: duckdns-updater
+    restart: always
+    environment:
+      - SUBDOMAINS=simplylearn
+      - TOKEN=DUCKDNS_TOKEN # Ise Jenkins credentials mein add karein
+    networks:
+      - simply-network
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy-server
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - simply-network
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  simply-network:
+    driver: bridge
