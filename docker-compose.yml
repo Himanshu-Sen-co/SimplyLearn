@@ -46,7 +46,7 @@ services:
     restart: always
     environment:
       - SUBDOMAINS=simplylearn
-      - TOKEN=DUCKDNS_TOKEN # Ise Jenkins credentials mein add karein
+      - TOKEN=${DUCKDNS_TOKEN} # Ise Jenkins credentials mein add karein
     networks:
       - simply-network
 
