@@ -40,15 +40,15 @@ services:
     networks:
       - simply-network
 
-  duckdns:
-    image: linuxserver/duckdns:latest
-    container_name: duckdns-updater
-    restart: always
-    environment:
-      - SUBDOMAINS=simplylearn
-      - TOKEN=${DUCKDNS_TOKEN} # Ise Jenkins credentials mein add karein
-    networks:
-      - simply-network
+  # duckdns:
+  #   image: linuxserver/duckdns:latest
+  #   container_name: duckdns-updater
+  #   restart: always
+  #   environment:
+  #     - SUBDOMAINS=simplylearn
+  #     - TOKEN=${DUCKDNS_TOKEN} # Ise Jenkins credentials mein add karein
+  #   networks:
+  #     - simply-network
 
   caddy:
     image: caddy:latest
