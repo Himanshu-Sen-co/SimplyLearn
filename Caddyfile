@@ -1,3 +1,7 @@
+{
+    email himanshukumar86936@gmail.com
+}
+
 simplylearn.duckdns.org {
     reverse_proxy app:8000
 }
