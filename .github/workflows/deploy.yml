@@ -1,0 +1,74 @@
+name: Deploy SimplyLearn to Oracle Cloud
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy project files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "~/SimplyLearn"
+
+      - name: Execute Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/SimplyLearn
+            
+            # Env Variables
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            export BETTER_AUTH_SECRET="${{ secrets.BETTER_AUTH_SECRET }}"
+            export AI_API_KEY="${{ secrets.AI_API_KEY }}"
+            export STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}"
+            export STRIPE_WEBHOOK_SECRET_KEY="${{ secrets.STRIPE_WEBHOOK_SECRET_KEY }}"
+            export DUCKDNS_TOKEN="${{ secrets.DUCKDNS_TOKEN }}"
+            export PORT=8000
+            export NODE_ENV=production
+            export TRUSTED_ORIGIN="https://simplylearnio.vercel.app"
+            export BETTER_AUTH_URL="https://simplylearn.duckdns.org"
+
+            docker compose down || true
+            docker compose up --build -d
+
+      - name: Send Mail on Success
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: SimplyLearn Deployed Successfully!
+          to: himanshukumar86936@gmail.com
+          from: GitHub Actions CI/CD
+          body: |
+            Hi Himanshu,
+            Aapka backend Oracle Cloud par successfully deploy ho gaya hai.
+            URL: https://simplylearn.duckdns.org
+
+      - name: Send Mail on Failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: Deployment FAILED!
+          to: himanshukumar86936@gmail.com
+          from: GitHub Actions CI/CD
+          body: Something went wrong during the deployment. Check GitHub Actions logs.
